@@ -10,6 +10,8 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"github.com/alexpana/udeploy/models"
+	"github.com/alexpana/udeploy/process"
+	"bufio"
 )
 
 func handleConnection(conn net.Conn) {
@@ -51,32 +53,58 @@ func PrintProjects(projects []models.Project) {
 	w.Flush()
 }
 
-
 func Sum512(s string) string {
 	sum512 := sha512.Sum512([]byte(s))
 	return hex.EncodeToString(sum512[:64])
 }
 
+func processInput(context *process.Context) {
+	reader := bufio.NewReader(os.Stdin)
+	const prompt = ":> "
+
+	for {
+		fmt.Print(prompt)
+		input, _ := reader.ReadString('\n')
+		context.Commands <- input
+	}
+}
+
 func main() {
 
-	projects := []models.Project{
-		{
-			Id:         Sum512("1"),
-			ConfigPath: "/Users/apana/go/src/github.com/apana/udeploy/deploy.yml",
-			Status:     models.RUNNING,
-		},{
-			Id:         Sum512("2"),
-			ConfigPath: "/Users/apana/go/src/github.com/apana/udeploy/deploy.yml",
-			Status:     models.RUNNING,
-		},{
-			Id:         Sum512("3"),
-			ConfigPath: "/Users/apana/go/src/github.com/apana/udeploy/deploy.yml",
-			Status:     models.STOPPED,
-		},
+	//projects := []models.Project{
+	//	{
+	//		Id:         Sum512("1"),
+	//		ConfigPath: "/Users/apana/go/src/github.com/apana/udeploy/deploy.yml",
+	//		Status:     models.RUNNING,
+	//	},
+	//	{
+	//		Id:         Sum512("2"),
+	//		ConfigPath: "/Users/apana/go/src/github.com/apana/udeploy/deploy.yml",
+	//		Status:     models.RUNNING,
+	//	},
+	//	{
+	//		Id:         Sum512("3"),
+	//		ConfigPath: "/Users/apana/go/src/github.com/apana/udeploy/deploy.yml",
+	//		Status:     models.STOPPED,
+	//	},
+	//}
+	//
+	//config := models.ReadConfig("/Users/apana/go/src/github.com/apana/udeploy/deploy.yml")
+	//fmt.Printf("%v\n", config)
+	//
+	//PrintProjects(projects)
+
+	//process.Spawn(models.Config{})
+
+	daemonContext := process.Context{
+		Commands:     make(chan string, 10),
+		//WaitForClose: make(chan bool),
 	}
 
-	config := models.ReadConfig("/Users/apana/go/src/github.com/apana/udeploy/deploy.yml")
-	fmt.Printf("%v\n", config)
+	go process.StartDaemon(&daemonContext)
+	go processInput(&daemonContext)
 
-	PrintProjects(projects)
+	fmt.Println("Waiting")
+	<-daemonContext.WaitForClose
+	fmt.Println("Done")
 }
