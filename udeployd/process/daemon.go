@@ -84,10 +84,12 @@ func handlePs(context *Context, writer io.Writer) {
 	w.Flush()
 }
 
+//noinspection GoUnusedParameter
 func handleRegister(context *Context, writer io.Writer) {
 	fmt.Fprintln(writer, "Not implemented")
 }
 
+//noinspection GoUnusedParameter
 func handleStop(context *Context, writer io.Writer) {
 	fmt.Fprintln(writer, "Not implemented")
 }
@@ -188,7 +190,7 @@ func handleConnection(context *Context, conn net.Conn) {
 
 		log.Printf("Received '%s' from %s", requestString, conn.RemoteAddr())
 
-		outputBytes := bytes.NewBuffer(make([]byte, 1024))
+		outputBytes := bytes.NewBuffer(make([]byte, 0))
 
 		handleRequest(requestString, context, outputBytes)
 
